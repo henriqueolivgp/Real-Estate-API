@@ -1,0 +1,85 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Clients {
+  client_id    Int            @id @unique @default(autoincrement())
+  name         String
+  email        String         @unique
+  phone        Int            @unique
+  Transactions Transactions[]
+}
+
+model Properties {
+  property_id       Int                 @id @unique @default(autoincrement())
+  property_type     String
+  address           String
+  size              Float
+  num_rooms         Int
+  price             Decimal             @db.Decimal(10, 2)
+  status            String              @default("")
+  PropertyFeatures  PropertyFeatures[]
+  PropertyDocuments PropertyDocuments[]
+  Transactions      Transactions[]
+  PropertyImages    PropertyImages[]
+}
+
+model PropertyFeatures {
+  feature_id   Int        @id @unique @default(autoincrement())
+  property     Properties @relation(fields: [property_id], references: [property_id])
+  property_id  Int
+  feature_name String
+}
+
+model PropertyDocuments {
+  document_id   Int        @id @unique @default(autoincrement())
+  property      Properties @relation(fields: [property_id], references: [property_id])
+  property_id   Int
+  document_name String
+  document_url  String
+}
+
+model Agents {
+  agent_id        Int            @id @unique @default(autoincrement())
+  name            String
+  email           String         @unique
+  phone           String         @unique
+  commission_rate Decimal        @db.Decimal(5, 2)
+  Transactions    Transactions[]
+}
+
+model PropertyCategories {
+  category_id   Int    @id @unique @default(autoincrement())
+  category_name String
+}
+
+model Transactions {
+  transaction_id   Int        @id @unique @default(autoincrement())
+  property         Properties @relation(fields: [property_id], references: [property_id])
+  property_id      Int
+  client           Clients    @relation(fields: [client_id], references: [client_id])
+  client_id        Int
+  agents           Agents     @relation(fields: [agent_id], references: [agent_id])
+  agent_id         Int
+  transaction_type String
+  transaction_date DateTime   @default(now())
+  price            Decimal    @db.Decimal(20, 2)
+}
+
+model PropertyImages {
+  image_id    Int        @unique @default(autoincrement())
+  property    Properties @relation(fields: [property_id], references: [property_id])
+  property_id Int
+  image_url String
+}
