@@ -1,11 +1,9 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
+  seed     = "node prisma/seed.ts"
 }
 
 datasource db {
@@ -13,73 +11,136 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Clients {
-  client_id    Int            @id @unique @default(autoincrement())
-  name         String
-  email        String         @unique
-  phone        Int            @unique
-  Transactions Transactions[]
+model User {
+  user_id         Int           @id @default(autoincrement())
+  name            String
+  email           String        @unique
+  phone           String        @unique
+  password        String
+  commission_rate Decimal?      @db.Decimal(5, 2)
+  session_id      String?
+  company_id      Int           @default(autoincrement())
+  company         Company       @relation(fields: [company_id], references: [company_id])
+  role_id         Int           @default(autoincrement())
+  role            Role          @relation(fields: [role_id], references: [role_id])
+  transactions    Transaction[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 }
 
-model Properties {
-  property_id       Int                 @id @unique @default(autoincrement())
-  property_type     String
-  address           String
-  size              Float
-  num_rooms         Int
-  price             Decimal             @db.Decimal(10, 2)
-  status            String              @default("")
-  PropertyFeatures  PropertyFeatures[]
-  PropertyDocuments PropertyDocuments[]
-  Transactions      Transactions[]
-  PropertyImages    PropertyImages[]
+model Client {
+  client_id  Int        @id @default(autoincrement())
+  name       String
+  email      String     @unique
+  phone      String     @unique
+  password   String
+  company_id Int        @default(autoincrement())
+  company    Company    @relation(fields: [company_id], references: [company_id])
+  role_id    Int        @default(autoincrement())
+  role       Role       @relation(fields: [role_id], references: [role_id])
+  properties Property[]
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
 }
 
-model PropertyFeatures {
-  feature_id   Int        @id @unique @default(autoincrement())
-  property     Properties @relation(fields: [property_id], references: [property_id])
+model Company {
+  company_id   Int        @id @default(autoincrement())
+  company_name String
+  clients      Client[]
+  users        User[]
+  properties   Property[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+model Property {
+  property_id             Int                       @id @default(autoincrement())
+  property_type           String
+  address                 String
+  size                    Float
+  num_rooms               Int
+  price                   Decimal                   @db.Decimal(10, 2)
+  status                  String                    @default("")
+  company_id              Int
+  company                 Company                   @relation(fields: [company_id], references: [company_id])
+  client_id               Int
+  client                  Client                    @relation(fields: [client_id], references: [client_id])
+  propertyFeatures        PropertyFeature[]
+  propertyDocuments       PropertyDocument[]
+  transactions            Transaction[]
+  propertyImages          PropertyImage[]
+  propertyCategoryMapping PropertyCategoryMapping[]
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+}
+
+model PropertyFeature {
+  feature_id   Int      @id @default(autoincrement())
   property_id  Int
+  property     Property @relation(fields: [property_id], references: [property_id])
   feature_name String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
-model PropertyDocuments {
-  document_id   Int        @id @unique @default(autoincrement())
-  property      Properties @relation(fields: [property_id], references: [property_id])
+model PropertyDocument {
+  document_id   Int      @id @default(autoincrement())
   property_id   Int
+  property      Property @relation(fields: [property_id], references: [property_id])
   document_name String
   document_url  String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
-model Agents {
-  agent_id        Int            @id @unique @default(autoincrement())
-  name            String
-  email           String         @unique
-  phone           String         @unique
-  commission_rate Decimal        @db.Decimal(5, 2)
-  Transactions    Transactions[]
+model PropertyCategory {
+  category_id             Int                       @id @default(autoincrement())
+  category_name           String
+  propertyCategoryMapping PropertyCategoryMapping[]
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
 }
 
-model PropertyCategories {
-  category_id   Int    @id @unique @default(autoincrement())
-  category_name String
-}
-
-model Transactions {
-  transaction_id   Int        @id @unique @default(autoincrement())
-  property         Properties @relation(fields: [property_id], references: [property_id])
+model Transaction {
+  transaction_id   Int      @id @default(autoincrement())
   property_id      Int
-  client           Clients    @relation(fields: [client_id], references: [client_id])
-  client_id        Int
-  agents           Agents     @relation(fields: [agent_id], references: [agent_id])
-  agent_id         Int
+  property         Property @relation(fields: [property_id], references: [property_id])
   transaction_type String
-  transaction_date DateTime   @default(now())
-  price            Decimal    @db.Decimal(20, 2)
+  transaction_date DateTime @default(now())
+  price            Decimal  @db.Decimal(20, 2)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  user_id          Int?
+  user             User?    @relation(fields: [user_id], references: [user_id])
 }
 
-model PropertyImages {
-  image_id    Int        @unique @default(autoincrement())
-  property    Properties @relation(fields: [property_id], references: [property_id])
-  property_id Int
-  image_url String
+model PropertyImage {
+  image_id    Int      @id @default(autoincrement())
+  property_id Int      @default(autoincrement())
+  property    Property @relation(fields: [property_id], references: [property_id])
+  image_url   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model PropertyCategoryMapping {
+  property_id Int @default(autoincrement()) // FK
+  category_id Int @default(autoincrement()) // FK 
+
+  property  Property         @relation(fields: [property_id], references: [property_id])
+  category  PropertyCategory @relation(fields: [category_id], references: [category_id])
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@id([property_id, category_id])
+  @@map("property_category_mapping")
+}
+
+model Role {
+  role_id   Int      @id @default(autoincrement())
+  role_type String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  User      User[]
+  Client    Client[]
 }
